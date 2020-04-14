@@ -18,7 +18,8 @@ directories: data/tmp \
 
 clean_data: data/clean/blocksMap.rda \
 	data/clean/communityMap.rda \
-	data/clean/gangMaps.rda
+	data/clean/gangMaps.rda \
+	data/clean/crime.rda
 
 relational_database:
 	
@@ -73,6 +74,14 @@ data/clean/gangMaps.rda: code/clean_gang_maps.R \
 	data/clean/blocksMap.rda
 	R CMD BATCH code/clean_gang_maps.R
 	mv clean_gang_maps.Rout log_files/clean_gang_maps.txt
+
+#Clean crime data
+data/clean/crime.rda: code/clean_crime_data.R \
+	data/raw/Crimes_2001_to_april_14_2020.csv \
+	data/clean/blocksMap.rda
+	R CMD BATCH code/clean_crime_data.R
+	mv clean_crime_data.Rout log_files/clean_crime_data.txt
+
 
 ##############################
 # MAKE A RELATIONAL DATABASE #

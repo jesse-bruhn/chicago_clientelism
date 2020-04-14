@@ -1,7 +1,7 @@
 # DOCUMENTATION -----------------------------------------------------------
 #
 #   Author:     Jesse Bruhn
-#   Contact:    jbruhn@princeton.edu
+#   Contact:    jbruhn@princeton.edu 
 #
 # PREAMBLE ----------------------------------------------------------------
 
@@ -34,7 +34,7 @@ sessionInfo()
 
 #Load Crime Data
 #NOTE: I need to use data table because the file is lare. 
-df <- fread("data/raw/Crimes_2001_to_present.csv")
+df <- fread("data/raw/Crimes_2001_to_april_14_2020.csv")
 
 #load chicago block geometry
 load("data/clean/blocksMap.rda")
@@ -46,11 +46,8 @@ colnames(df) <- c("id", "case_num", "date_time", "block", "iucr", "type", "descr
                   "arrest", "domestic", "beat", "district", "ward", "community_area", "fbi_code", 
                   "x_coord", "y_coord", "year", "date_updated", "latitude", "longitude", "coordinates")
 
-#drop observations with missing lat and lon.  
-#NOTE: There are 83309 observations missing latitude and longitude.  
-#      There are no observations missing only one or the other.  
-#      The total number of obs are 6426392 so this represents ~ 1.3 percent 
-#      of the sample.
+#drop observations with missing lat and lon.
+#NOTE: Need to output exact number at some point, but it is small
 df <- df[!is.na(df$latitude) | !is.na(df$longitude), ] 
 
 #Convert crimes into geospatial dataframe
@@ -62,8 +59,9 @@ df <- st_as_sf(df, coords = c("longitude", "latitude"),
 #NOTE: This takes a while. 
 block.assignments <- st_intersects(df, blocks.shp)
 
-#There are 14324 crimes which do not intersect with the shapefile.  
+#There are some crimes which do not intersect with the shapefile.  
 #I set them to missing here. 
+#NOTE: Need to output exact number dropped here at some point, but it is small
 intZero <- function(x){
   ifelse(is.integer(x) && length(x) == 0, NA, x)
 }
@@ -77,8 +75,7 @@ df <- df %>%
   mutate(block.id = block.assignments)
 
 #Drop crimes which do not intersect with blocks.shp 
-#NOTE: There are about 14324 of these 
-#      which is very small relative to the sample
+#NOTE: Need to output exact number dropped here at some point, but it is small
 df <- df %>%
   filter(!is.na(block.id))
 
@@ -98,20 +95,22 @@ st_geometry(df) <- NULL
 #find blocks that never report a crime so i can include them in final data set
 crimeless.blocks <- setdiff(unique(blocks.shp$block.id), unique(df$block.id))
 crimeless.blocks <- tibble(block.id = crimeless.blocks, 
+                           date = rep(ydm(20010101), length.out=length(crimeless.blocks)),
                            type = rep(df$type[1], length.out=length(crimeless.blocks)),
-                           date = rep(ydm(20010101), length.out=length(crimeless.blocks)), 
                            n = rep(0, length.out=length(crimeless.blocks)))
 
-#Aggregate data by block-date-type.
+
+#Aggregate data by block-date-type-description.
 df <- df %>% 
   group_by(block.id, date, type) %>%
   count() %>%
-  ungroup() 
+  ungroup()
 
 #Add in crimeless blocks and add in implicit zeros
 df <- df %>%
   rbind(crimeless.blocks) %>%
   complete(block.id, date, type, fill = list(n=0))
+
 
 # OUTPUT TARGETS ----------------------------------------------------------
 
