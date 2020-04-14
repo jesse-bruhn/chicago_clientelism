@@ -3,9 +3,11 @@ data/*
 funding/*
 misc/*
 packrat/*
+log_files/*
 *.DS_store
 *.Rprofile
 chicago_clientelism.Rproj
+*.Rout
 
 ## Default R Ignores
 
